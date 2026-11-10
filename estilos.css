@@ -1,0 +1,461 @@
+/* =====================================================================
+   estilos.css · Juego de revelación de videos
+   ===================================================================== */
+
+
+/* =====================================================================
+   ZONA EDITABLE
+   Aquí cambias colores y tamaños de letra. No hace falta tocar nada más.
+
+   Los tamaños en "vh" escalan con la altura de la pantalla
+   (1vh = 1 % del alto), así todo se ve proporcionado en cualquier
+   proyector. Para letra más grande, sube el número; para más chica, bájalo.
+   ===================================================================== */
+:root {
+  /* ---- Colores generales ---- */
+  --color-fondo: #071c24;          /* fondo de toda la página */
+  --color-texto: #f5f2e9;          /* letra del título y de la lista */
+  --color-texto-suave: #9db9c1;    /* letra secundaria (contador, avisos) */
+  --color-fondo-panel: #0f2f3a;    /* fondo del cuadro de especies */
+
+  /* ---- Paneles del tablero ---- */
+  --color-carta: #0b5563;          /* panel boca abajo (azul petróleo) */
+  --color-numero: #ffd60a;         /* número del panel (amarillo) */
+  --color-carta-hover: #12788c;    /* panel cuando pasas el cursor */
+  --color-resalte: #ffd60a;        /* borde y brillo al pasar el cursor */
+
+  /* ---- Botones (Reiniciar y cerrar video) ---- */
+  --color-boton: #ffd60a;          /* fondo del botón */
+  --color-boton-texto: #071c24;    /* letra del botón */
+  --color-boton-hover: #ffe766;    /* fondo del botón al pasar el cursor */
+
+  /* ---- Reproductor de video ---- */
+  --color-visor-fondo: #000000;
+
+  /* ---- Tamaños de letra ---- */
+  --tam-titulo: 4.4vh;             /* título de arriba */
+  --tam-numero: 7.5vh;             /* número grande de cada panel */
+  --tam-insignia: 2.6vh;           /* numerito sobre la miniatura */
+  --tam-lista-titulo: 3.4vh;       /* "Especies registradas" */
+  --tam-contador: 3vh;             /* "3 / 15" */
+  --tam-lista: 3vh;                /* nombres de las especies */
+  --tam-boton: 3.4vh;              /* texto del botón Reiniciar */
+
+  /* ---- Forma y animación ---- */
+  --fuente: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --radio: 1.4vh;                  /* redondeo de esquinas */
+  --espacio: 1.4vh;                /* separación entre paneles */
+  --duracion-volteo: 0.7s;         /* velocidad del giro de las cartas */
+}
+/* ============================ FIN ZONA EDITABLE ==================== */
+
+
+
+/* ---------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--fuente);
+}
+
+/* ---------------------------------------------------------------------
+   Encabezado
+   --------------------------------------------------------------------- */
+.encabezado {
+  flex: 0 0 auto;
+  padding: 1.4vh 2vw 1vh;
+  text-align: center;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: var(--tam-titulo);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
+.nota {
+  margin: 0.6vh 0 0;
+  font-size: calc(var(--tam-contador) * 0.8);
+  color: var(--color-texto-suave);
+}
+
+/* ---------------------------------------------------------------------
+   Escenario: tablero a la izquierda, lista a la derecha
+   --------------------------------------------------------------------- */
+.escenario {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 2.5vw;
+  padding: 0 2vw 2vh;
+}
+
+/* El tablero toma el alto disponible y calcula su ancho para que cada
+   panel tenga proporción de video (16:9). El aspect-ratio exacto lo
+   fija juego.js según columnas y filas. */
+.tablero {
+  flex: 0 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  max-width: 74%;
+  aspect-ratio: 48 / 45;
+  display: grid;
+  grid-template-columns: repeat(var(--columnas, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--filas, 5), minmax(0, 1fr));
+  gap: var(--espacio);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------------------------------------------------------------------
+   Paneles (cartas)
+   --------------------------------------------------------------------- */
+.carta {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  perspective: 1200px;
+  transition: transform 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.carta:hover:not(:disabled),
+.carta:focus-visible {
+  transform: scale(1.05);
+  z-index: 2;
+  outline: none;
+}
+
+/* Parte que gira */
+.carta-interior {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--duracion-volteo) cubic-bezier(0.45, 0.1, 0.25, 1);
+}
+
+.carta.volteada .carta-interior {
+  transform: rotateY(180deg);
+}
+
+.cara {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radio);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Cara de enfrente: el número */
+.cara-frente {
+  background: var(--color-carta);
+  color: var(--color-numero);
+  font-size: var(--tam-numero);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0.4vh 1.2vh rgba(0, 0, 0, 0.45);
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Cara de atrás: la miniatura del video */
+.cara-dorso {
+  transform: rotateY(180deg);
+  background: #000;
+  box-shadow: 0 0.4vh 1.2vh rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.18s ease;
+}
+
+.cara-dorso img,
+.cara-dorso video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Resalte al pasar el cursor (o enfocar con teclado) */
+.carta:hover:not(:disabled) .cara-frente,
+.carta:focus-visible .cara-frente {
+  background: var(--color-carta-hover);
+  box-shadow: 0 0 0 0.5vh var(--color-resalte), 0 0 3vh var(--color-resalte);
+}
+
+.carta:hover:not(:disabled) .cara-dorso,
+.carta:focus-visible .cara-dorso {
+  box-shadow: 0 0 0 0.5vh var(--color-resalte), 0 0 3vh var(--color-resalte);
+}
+
+/* Número pequeño sobre la miniatura, para recordar qué panel era */
+.insignia {
+  position: absolute;
+  top: 0.8vh;
+  left: 0.8vh;
+  min-width: 2.2em;
+  padding: 0.05em 0.5em;
+  border-radius: 999px;
+  background: var(--color-carta);
+  color: var(--color-numero);
+  font-size: var(--tam-insignia);
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* Icono de "play": indica que se puede volver a ver */
+.icono-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 5.5vh;
+  height: 5.5vh;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.icono-play::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 1.4vh 0 1.4vh 2.3vh;
+  border-color: transparent transparent transparent #fff;
+}
+
+/* Paneles sin video asignado (si hay menos videos que paneles) */
+.carta:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.carta:disabled .cara-frente {
+  background: transparent;
+  color: var(--color-texto-suave);
+  border: 0.3vh dashed var(--color-texto-suave);
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------------
+   Panel lateral: lista de especies
+   --------------------------------------------------------------------- */
+.lista {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2vh 1.8vw;
+  border-radius: var(--radio);
+  background: var(--color-fondo-panel);
+}
+
+.lista-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1vw;
+}
+
+.lista h2 {
+  margin: 0;
+  font-size: var(--tam-lista-titulo);
+  font-weight: 800;
+}
+
+.contador {
+  font-size: var(--tam-contador);
+  font-weight: 700;
+  color: var(--color-texto-suave);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lista-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 1.6vh 0;
+  overflow-y: auto;
+}
+
+.lista-vacia {
+  margin: 0;
+  font-size: var(--tam-lista);
+  color: var(--color-texto-suave);
+}
+
+#lista-especies {
+  margin: 0;
+  padding-left: 2.2em;
+  font-size: var(--tam-lista);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+#lista-especies li {
+  padding: 0.05em 0.3em;
+  border-radius: 0.3em;
+}
+
+#lista-especies li::marker {
+  color: var(--color-resalte);
+}
+
+/* Cada especie nueva entra con un destello */
+#lista-especies li.nuevo {
+  animation: aparece 1.1s ease-out;
+}
+
+@keyframes aparece {
+  0% {
+    opacity: 0;
+    transform: translateX(3rem);
+    background: var(--color-resalte);
+    color: var(--color-boton-texto);
+  }
+  35% {
+    opacity: 1;
+    transform: none;
+    background: var(--color-resalte);
+    color: var(--color-boton-texto);
+  }
+  100% {
+    background: transparent;
+    color: var(--color-texto);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Botones
+   --------------------------------------------------------------------- */
+.boton {
+  flex: 0 0 auto;
+  padding: 0.55em 1.2em;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--color-boton);
+  color: var(--color-boton-texto);
+  font: inherit;
+  font-size: var(--tam-boton);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.boton:hover,
+.boton:focus-visible {
+  background: var(--color-boton-hover);
+  transform: scale(1.03);
+  outline: none;
+}
+
+.boton:active {
+  transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------------------
+   Reproductor a pantalla completa
+   --------------------------------------------------------------------- */
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  background: var(--color-visor-fondo);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s;
+}
+
+.visor.abierto {
+  opacity: 1;
+  visibility: visible;
+}
+
+.visor video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--color-visor-fondo);
+  outline: none;
+}
+
+.visor-cerrar {
+  position: absolute;
+  top: 2.5vh;
+  right: 2vw;
+  z-index: 2;
+  width: 7vh;
+  height: 7vh;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-boton);
+  color: var(--color-boton-texto);
+  font-size: 3.6vh;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0.4vh 1.5vh rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.visor-cerrar:hover,
+.visor-cerrar:focus-visible {
+  background: var(--color-boton-hover);
+  transform: scale(1.08);
+  outline: none;
+}
+
+/* ---------------------------------------------------------------------
+   Aviso a pantalla completa (falta manifiesto, no hay videos…)
+   --------------------------------------------------------------------- */
+.aviso {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  place-items: center;
+  padding: 5vw;
+  background: var(--color-fondo);
+  text-align: center;
+}
+
+.aviso.visible {
+  display: grid;
+}
+
+.aviso h2 {
+  margin: 0 0 2vh;
+  font-size: var(--tam-titulo);
+}
+
+.aviso p {
+  margin: 0;
+  font-size: var(--tam-lista);
+  color: var(--color-texto-suave);
+}

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revelación de fauna local</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+  <header class="encabezado">
+    <!-- EDITA AQUÍ EL TÍTULO QUE SE VE EN LA PROYECCIÓN -->
+    <h1>Fauna local · Cámaras trampa</h1>
+    <p id="nota" class="nota" hidden></p>
+  </header>
+
+  <main class="escenario">
+    <!-- Tablero: los paneles los crea juego.js -->
+    <section id="tablero" class="tablero" aria-label="Tablero de paneles"></section>
+
+    <!-- Lista de especies reveladas + botón de reinicio -->
+    <aside class="lista" aria-label="Especies registradas">
+      <div class="lista-cabecera">
+        <h2>Especies registradas</h2>
+        <span id="contador" class="contador">0 / 15</span>
+      </div>
+
+      <div class="lista-cuerpo">
+        <p id="lista-vacia" class="lista-vacia">Aún no se ha revelado ninguna especie.</p>
+        <ol id="lista-especies"></ol>
+      </div>
+
+      <button id="btn-reiniciar" class="boton" type="button">Reiniciar</button>
+    </aside>
+  </main>
+
+  <!-- Reproductor a pantalla completa -->
+  <div id="visor" class="visor" role="dialog" aria-modal="true" aria-label="Video" aria-hidden="true">
+    <video id="video" controls playsinline preload="auto"></video>
+    <button id="btn-cerrar" class="visor-cerrar" type="button" aria-label="Cerrar video (Esc)">&#10005;</button>
+  </div>
+
+  <!-- Mensaje a pantalla completa si falta el manifiesto o no hay videos -->
+  <div id="aviso" class="aviso">
+    <div>
+      <h2 id="aviso-titulo"></h2>
+      <p id="aviso-texto"></p>
+    </div>
+  </div>
+
+  <noscript>Este juego necesita JavaScript activado en el navegador.</noscript>
+
+  <script src="manifiesto.js"></script>
+  <script src="juego.js"></script>
+</body>
+</html>
